@@ -1,138 +1,140 @@
-/* ===============================
-   General Styles
-================================= */
-body {
-    font-family: Arial, sans-serif;
-    background-color: #f3f3f3;
+/* Reset */
+* {
     margin: 0;
     padding: 0;
-    color: #333;
-}
-table img {
-    width: 100px;
-    height: auto;
-    border-radius: 5px;
-}
-h1 {
-    text-align: center;
-    margin: 30px 0;
+    box-sizing: border-box;
 }
 
-/* ===============================
-   Navbar
-================================= */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+
+/* Navbar */
 nav {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 30px;
+    padding: 10px 20px;
     background-color: #333;
-    color: white;
+    color: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
 }
 
 nav a {
-    color: white;
+    color: #fff;
     text-decoration: none;
-    margin-left: 15px;
     font-weight: bold;
-    transition: 0.3s;
 }
 
-nav a:hover {
-    color: #ffd700;
-}
-
-/* ===============================
-   Table Styles
-================================= */
+/* Table styling */
 table {
-    width: 90%;
-    margin: auto;
+    width: 100%;
     border-collapse: collapse;
     background-color: #fff;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+thead {
+    background-color: #333;
+    color: #fff;
 }
 
 th, td {
-    padding: 15px;
+    padding: 10px;
     text-align: center;
     border-bottom: 1px solid #ddd;
 }
 
-th {
-    background-color: #555;
-    color: white;
-    text-transform: uppercase;
-}
-
-tr:hover {
+tbody tr:hover {
     background-color: #f1f1f1;
 }
 
-img {
-    width: 80px;
-    height: auto;
+/* Movie image fixed height */
+td img {
+    height: 100px;
+    object-fit: cover;
     border-radius: 5px;
 }
 
-/* ===============================
-   Buttons
-================================= */
+/* Buttons */
 .btn {
-    padding: 8px 12px;
     text-decoration: none;
-    color: white;
+    padding: 6px 10px;
     border-radius: 5px;
-    transition: 0.3s;
+    color: #fff;
+    font-size: 0.85em;
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-weight: bold;
-    font-size: 0.9rem;
+    transition: background 0.2s;
 }
 
-.buy {
+.btn.buy {
     background-color: #28a745;
 }
 
-.buy:hover {
+.btn.buy:hover {
     background-color: #218838;
 }
 
-.save {
+.btn.save {
     background-color: #007bff;
 }
 
-.save:hover {
-    background-color: #0056b3;
+.btn.save:hover {
+    background-color: #0069d9;
 }
 
-/* ===============================
-   Responsive
-================================= */
+/* Responsive adjustments */
 @media (max-width: 768px) {
     table, thead, tbody, th, td, tr {
         display: block;
+        width: 100%;
     }
 
-    th, td {
-        padding: 10px;
-        text-align: left;
+    thead tr {
+        display: none;
     }
 
-    tr {
+    tbody tr {
         margin-bottom: 20px;
         border-bottom: 2px solid #ddd;
+        padding-bottom: 10px;
+    }
+
+    td {
+        text-align: left;
+        padding: 5px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
     }
 
     td img {
-        display: block;
-        margin: 0 auto 10px;
+        margin: 0 auto;
     }
 
-    td .btn {
-        width: 100%;
+    .btn {
+        width: 48%;
         justify-content: center;
-        margin-top: 5px;
+        margin: 2px 0;
+    }
+
+    td:last-child {
+        display: flex;
+        justify-content: space-between;
+        gap: 5px;
+    }
+}
+
+/* Optional: smaller screens */
+@media (max-width: 480px) {
+    .btn {
+        width: 100%;
     }
 }

@@ -5,21 +5,15 @@ if (!$conn) {
     die("Connection failed: " . mysqli_connect_error());
 }
 
-// Handle Add Movie
-if (isset($_POST['add_movie'])) {
-    $title = $_POST['title'];
-    $price = $_POST['price'];
-    $people_buy = $_POST['people_buy'] ?? 0;
-    $people_save = $_POST['people_save'] ?? 0;
-    $people_watch = $_POST['people_watch'] ?? 0;
-
-    $stmt = $conn->prepare("INSERT INTO movies (title, price, people_buy, people_save, people_watch) VALUES (?, ?, ?, ?, ?)");
-    $stmt->bind_param("siiii", $title, $price, $people_buy, $people_save, $people_watch);
-    $stmt->execute();
-    $stmt->close();
+/* DELETE MOVIE: mark as deleted */
+if (isset($_GET['delete'])) {
+    $id = $_GET['delete'];
+    $conn->query("UPDATE movies SET is_deleted=1 WHERE id=$id");
+    header("Location: manager_admin.php"); // reload page
+    exit;
 }
 
-// Handle Edit Movie (only title and price)
+/* EDIT MOVIE */
 if (isset($_POST['edit_movie'])) {
     $id = $_POST['id'];
     $title = $_POST['title'];
@@ -31,118 +25,146 @@ if (isset($_POST['edit_movie'])) {
     $stmt->close();
 }
 
-// Handle Delete Movie
-if (isset($_GET['delete'])) {
-    $id = $_GET['delete'];
-    $conn->query("DELETE FROM movies WHERE id=$id");
-}
-
-// Fetch all movies
-$result = $conn->query("SELECT * FROM movies");
-
-// Calculate total numbers for all movies
-$total_result = $conn->query("SELECT SUM(people_buy) AS total_buy, SUM(people_save) AS total_save, SUM(people_watch) AS total_watch FROM movies");
+/* TOTAL COUNTERS */
+$total_result = $conn->query("
+    SELECT 
+    SUM(people_buy) AS total_buy, 
+    SUM(people_save) AS total_save, 
+    SUM(people_watch) AS total_watch 
+    FROM movies
+");
 $totals = $total_result->fetch_assoc();
+
+/* FETCH MOVIES (only not deleted) */
+$result = $conn->query("SELECT * FROM movies WHERE is_deleted=0");
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>Manager Admin - Movie Store</title>
     <style>
-        body {font-family: Arial, sans-serif; margin: 0; display: flex;}
-        /* Right navbar */
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            display: flex;
+            background: #f4f6f9;
+        }
+
+        /* NAVBAR */
         .navbar {
             width: 220px;
-            background-color: #333;
+            background: #2c3e50;
             color: white;
             padding: 20px;
             height: 100vh;
         }
-        .navbar img {width: 100%; margin-bottom: 20px;}
-        .navbar h3 {color: #fff; margin-bottom: 10px;}
-        .navbar a {
-            display: block;
-            color: #fff;
-            text-decoration: none;
-            margin: 10px 0;
-            padding: 5px 0;
-            border-left: 4px solid transparent;
+
+        .navbar img { width: 100%; margin-bottom: 20px; }
+        .navbar a { display: block; color: white; text-decoration: none; margin: 10px 0; padding: 8px; border-radius: 4px; }
+        .navbar a:hover { background: #34495e; }
+
+        /* CONTENT */
+        .content { flex: 1; padding: 20px; }
+
+        /* TOTAL BOXES */
+        .total-container { display: flex; gap: 15px; margin-bottom: 20px; }
+        .total-box { flex: 1; padding: 20px; color: white; border-radius: 8px; text-align: center; font-weight: bold; }
+        .buy-box { background: #3498db; }
+        .save-box { background: #27ae60; }
+        .watch-box { background: #f39c12; }
+        .total-number { font-size: 28px; margin-top: 10px; display: block; }
+
+        /* TABLE */
+        table { width: 100%; border-collapse: collapse; background: white; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background: #ecf0f1; }
+        input[type=text], input[type=number] { width: 80%; padding: 4px; }
+
+        /* BUTTONS */
+        .update-btn { background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .update-btn:hover { background: #218838; }
+        .delete-btn { background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        .delete-btn:hover { background: #c82333; }
+
+        /* ADD BUTTON LINK */
+        .add-movie-btn {
+            padding: 10px 20px; background-color: #28a745; color: white; 
+            text-decoration: none; border-radius: 5px; font-weight: bold;
         }
-        .navbar a:hover {border-left: 4px solid #00bfff; text-decoration: none;}
-        /* Main content */
-        .content {flex: 1; padding: 20px;}
-        table {border-collapse: collapse; width: 100%; font-size: 12px;}
-        th, td {border: 1px solid #ccc; padding: 6px; text-align: center;}
-        th {background-color: #f4f4f4;}
-        input[type=text], input[type=number] {width: 80%; padding: 4px;}
-        button {padding: 5px 10px; margin: 2px; cursor: pointer;}
-        button[name="edit_movie"] {background-color: red; color: white; border: none;}
-        button[type="button"] {background-color: gray; color: white; border: none;}
-        .people-buy {background-color: #cce5ff; font-weight: bold; width: 90px;}
-        .people-save {font-weight: bold;}
-        .people-watch {background-color: #ffd699; font-weight: bold;}
-        .totals {margin: 10px 0; font-size: 16px; font-weight: bold;}
-        form {margin:0;}
-        .top-buttons {margin-bottom: 15px;}
-        .top-buttons a {margin-right: 10px; text-decoration: none; background-color: #00bfff; color: white; padding: 6px 12px; border-radius: 4px;}
-        .top-buttons a:hover {background-color: #009acd;}
     </style>
 </head>
 <body>
-    <!-- Right Manager Navbar -->
-    <div class="navbar">
-        <img src="../assets/images/logo.png" alt="Logo">
-        <h3>Manager Menu</h3>
-        <a href="interface.php">Dashboard</a>
-        <a href="add_movie.php">Add Movie</a>
-        <a href="#">Reports</a>
-        <a href="#">Logout</a>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    <img src="https://imgs.search.brave.com/6ZtWT5f_zvu4Y-akKQRlcFTdxc7F4lSGXmu-lP5XMk8/rs:fit:500:0:1:0/g:ce/aHR0cHM6Ly9hczEu/ZnRjZG4ubmV0L2pw/Zy8wMi8zNS8xNy83/Mi8xMDAwX0ZfMjM1/MTc3MjI4X3dHMWRM/bzF0Snh2WEFkclUy/eUZ4d3MyOGNhcks2/RnBzLmpwZw" alt="Logo">
+    <h3>Manager Menu</h3>
+    <a href="interface.php">Dashboard</a>
+    <a href="add_movie.php">Add Movie</a>
+    <a href="delete_movie.php">Deleted Movies</a>
+    <a href="#">Reports</a>
+    <a href="interface.php">Logout</a>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0;">
+        <h2 style="margin: 0;">🎬 Movie Manager Admin</h2>
+        <a href="add_movie.php" class="add-movie-btn">Add Movie</a>
     </div>
 
-    <!-- Main content -->
-    <div class="content">
-        <h2>Movie Manager Admin</h2>
-        <!-- Total Counters -->
-        <div class="totals">
-            Total People Buy: <?= $totals['total_buy'] ?? 0 ?> &nbsp;&nbsp;|&nbsp;&nbsp;
-            Total People Save: <?= $totals['total_save'] ?? 0 ?> &nbsp;&nbsp;|&nbsp;&nbsp;
-            Total People Watch: <?= $totals['total_watch'] ?? 0 ?>
+    <!-- TOTAL BOXES -->
+    <div class="total-container">
+        <div class="total-box buy-box">
+            Total People Buy
+            <span class="total-number"><?= $totals['total_buy'] ?? 0 ?></span>
         </div>
-
-        <!-- Movies Table -->
-        <h3>All Movies</h3>
-        <table>
-            <tr>
-                <th>ID</th>
-                <th>Title</th>
-                <th>Price</th>
-                <th class="people-buy">People Buy</th>
-                <th class="people-save">People Save</th>
-                <th class="people-watch">People Watch</th>
-                <th>Actions</th>
-            </tr>
-            <?php while($row = $result->fetch_assoc()): ?>
-            <tr>
-                <form method="POST">
-                    <td><?= $row['id'] ?></td>
-                    <td><input type="text" name="title" value="<?= $row['title'] ?>"></td>
-                    <td><input type="number" name="price" value="<?= $row['price'] ?>"></td>
-                    <td class="people-buy"><?= $row['people_buy'] ?></td>
-                    <td class="people-save"><?= $row['people_save'] ?></td>
-                    <td class="people-watch"><?= $row['people_watch'] ?></td>
-                    <td>
-                        <input type="hidden" name="id" value="<?= $row['id'] ?>">
-                        <button type="submit" name="edit_movie">Save</button>
-                        <a href="?delete=<?= $row['id'] ?>" onclick="return confirm('Are you sure?')">
-                            <button type="button">Delete</button>
-                        </a>
-                    </td>
-                </form>
-            </tr>
-            <?php endwhile; ?>
-        </table>
+        <div class="total-box save-box">
+            Total People Save
+            <span class="total-number"><?= $totals['total_save'] ?? 0 ?></span>
+        </div>
+        <div class="total-box watch-box">
+            Total People Watch
+            <span class="total-number"><?= $totals['total_watch'] ?? 0 ?></span>
+        </div>
     </div>
+
+    <!-- MOVIE TABLE -->
+    <h3>All Movies</h3>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Title</th>
+            <th>Price</th>
+            <th>People Buy</th>
+            <th>People Save</th>
+            <th>People Watch</th>
+            <th>Actions</th>
+        </tr>
+
+        <?php while($row = $result->fetch_assoc()): ?>
+        <tr>
+            <form method="POST">
+                <td><?= $row['id'] ?></td>
+                <td><input type="text" name="title" value="<?= $row['title'] ?>"></td>
+                <td><input type="number" name="price" value="<?= $row['price'] ?>"></td>
+                <td><?= $row['people_buy'] ?></td>
+                <td><?= $row['people_save'] ?></td>
+                <td><?= $row['people_watch'] ?></td>
+                <td>
+                    <input type="hidden" name="id" value="<?= $row['id'] ?>">
+                    <button type="submit" name="edit_movie" class="update-btn">Update</button>
+                    <button type="button" class="delete-btn" 
+                        onclick="window.location.href='manager_admin.php?delete=<?= $row['id'] ?>';">
+                        Delete
+                    </button>
+                </td>
+            </form>
+        </tr>
+        <?php endwhile; ?>
+    </table>
+</div>
+
 </body>
 </html>
